@@ -39,6 +39,55 @@ async (req, res) => {
     if(!error.isEmpty()) {
         return res.status(400).json({ errors: errors.array() })
     }
-})
+
+    const {
+        company,
+        website,
+        location,
+        bio,
+        status,
+        githubusername,
+        skills,
+        youtube,
+        facebook,
+        twitter,
+        instagram,
+        linkedIn
+    } = req.body;
+
+    // Build profile object
+    const profileFields = {};
+    profileFields.user = req.user.id;
+    if(company) profileFields.company = company;
+    if(website) profileFields.website = website;
+    if(location) profileFields.location = location;
+    if(bio) profileFields.bio = bio;
+    if(status) profileFields.status = status;
+    if(githubusername) profileFields.githubusername = githubusername;
+    if(skills) {
+        profileFields.skills = skills.split(',').map(skill => skill.trim());
+    }
+
+    // Build social object
+    profileFields.social = {}
+    if(youtube) profileFields.social.youtube = youtube;
+    if(twitter) profileFields.social.twitter = twitter;
+    if(youtube) profileFields.social.facebook = facebook;
+    if(youtube) profileFields.social.linkedin = linkedin;
+    if(youtube) profileFields.social.instagram = instagram;
+
+    try {
+        let profile = await Profile.findOne({ user: req.user.id });
+        // Update
+        profile = await Profile.findOneAAndUpdate(
+            { user: req.user.id }, 
+            { $set: profileFields },
+            { new: true }
+        );
+    } catch (err) {
+        console.log(err.message);
+        res.status(500).send('Server Error')
+    }
+});
 
 module.exports = router;
