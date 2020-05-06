@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../../middleware/auth')
-const { check, validationResult } = require('express-validator')
+const { check, validationResult } = require('express-validator/check')
 
 const Profile = require('../../models/Profile');
 const User = require('../../models/User');
@@ -36,7 +36,7 @@ router.post('/', [ auth, [
 ], 
 async (req, res) => {
     const errors = validationResult(req);
-    if(!error.isEmpty()) {
+    if(!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() })
     }
 
@@ -72,18 +72,30 @@ async (req, res) => {
     profileFields.social = {}
     if(youtube) profileFields.social.youtube = youtube;
     if(twitter) profileFields.social.twitter = twitter;
-    if(youtube) profileFields.social.facebook = facebook;
-    if(youtube) profileFields.social.linkedin = linkedin;
-    if(youtube) profileFields.social.instagram = instagram;
+    if(facebook) profileFields.social.facebook = facebook;
+    if(linkedIn) profileFields.social.linkedin = linkedin;
+    if(instagram) profileFields.social.instagram = instagram;
 
     try {
         let profile = await Profile.findOne({ user: req.user.id });
-        // Update
-        profile = await Profile.findOneAAndUpdate(
-            { user: req.user.id }, 
-            { $set: profileFields },
-            { new: true }
-        );
+        
+        if(profile) {
+            // Update
+            profile = await Profile.findOneAndUpdate(
+                { user: req.user.id }, 
+                { $set: profileFields },
+                { new: true }
+            );
+
+            return res.json(profile);
+        }
+
+        // Create
+        profile = new Profile(profileFields);
+
+        await profile.save();
+        res.json(profile);
+
     } catch (err) {
         console.log(err.message);
         res.status(500).send('Server Error')
